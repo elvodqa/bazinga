@@ -1,0 +1,26 @@
+{
+	"authors": [
+		"Emir Cengiz"
+	],
+	"copyright": "Copyright © 2023, Emir Cengiz",
+	"dependencies": {
+		"raylib-d": "~>4.5.1",
+		"toml": "~>2.0.1"
+	},
+	"description": "A minimal D application.",
+	"lflags-linux": [
+		"-rpath=$$ORIGIN"
+	],
+	"lflags-osx": [
+		"-rpath",
+		"@executable_path/"
+	],
+	"lflags-posix": [
+		"-L."
+	],
+	"libs": [
+		"raylib"
+	],
+	"license": "proprietary",
+	"name": "bazinga"
+}
