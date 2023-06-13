@@ -1,4 +1,5 @@
 module bazinga.parser;
+import std.ascii;
 
 class Command {}
 
@@ -31,6 +32,10 @@ class SetSceneCommand : Command {
     string scene;
 }
 
+class SetWindowTitle : Command {
+    string title;
+}
+
 enum TokenType {
     StringLiteral,
     NumberLiteral,
@@ -38,6 +43,9 @@ enum TokenType {
     WhiteSpace,
     NewLine,
     Tab,
+    Variable,
+    Equal,
+    Assign,
 }
 
 struct Token {
@@ -49,6 +57,7 @@ struct Token {
 
 class CommandParser {
     Command[] commands;
+    Token[] tokens;
     string source;
     int line;
     int column;
@@ -57,6 +66,7 @@ class CommandParser {
         this.source = source;
         this.line = 1;
         this.column = 1;
+        this.tokens = this.getTokens(source);
     }
 
     void ParseNextCommand() {
@@ -64,155 +74,125 @@ class CommandParser {
     }
 
     Token[] getTokens(string source) {
-        Token[] tokens;
+        Token[] tokens_list;
         int index = 0;
 
         while (index < source.length) {
             char c = source[index];
             if (c == '"') {
-                Token token;
-                token.type = TokenType.StringLiteral;
-                token.value = getStringLiteral(source, index);
-                tokens ~= token;
+                tokens_list ~= this.getStringLiteral(source, index);
             } else if (c == ' ' || c == '\t') {
-                Token token;
-                token.type = TokenType.WhiteSpace;
-                token.value = getWhiteSpace(source, index);
-                tokens ~= token;
+                tokens_list ~= this.getWhiteSpace(source, index);
             } else if (c == '\n') {
-                Token token;
-                token.type = TokenType.NewLine;
-                token.value = getNewLine(source, index);
-                tokens ~= token;
-            } else if (c == '\t') {
-                Token token;
-                token.type = TokenType.Tab;
-                token.value = getTab(source, index);
-                tokens ~= token;
-            } else if (isDigit(c) || c == '-') {
-                Token token;
-                token.type = TokenType.NumberLiteral;
-                token.value = getNumberLiteral(source, index);
-                tokens ~= token;
-            } else if (isLetter(c)) {
-                Token token;
-                token.type = TokenType.Identifier;
-                token.value = getIdentifier(source, index);
-                tokens ~= token;
-            } else {
+                tokens_list ~= this.getNewLine(source, index);
+            } else if (c == '$') {
+                tokens_list ~= this.getVariable(source, index);
+            } else if (isDigit(c)) {
+                tokens_list ~= this.getNumberLiteral(source, index);
+            } else if (isAlpha(c)) {
+                tokens_list ~= this.getIdentifier(source, index);
+            } else if (c == '=') { // = is assign, == is assign
+                if (index + 1 < source.length && source[index + 1] == '=') {
+                    tokens_list ~= Token("==", TokenType.Assign, this.line, this.column);
+                    // index++;
+                } else {
+                    tokens_list ~= Token("=", TokenType.Equal, this.line, this.column);
+                }
+                // index++;
+            }
+            else {
                 throw new Exception("Unexpected character: " ~ c);
             }
-            index += tokens[tokens.length - 1].value.length;
+            index += tokens_list[tokens_list.length - 1].value.length;
 
-            if (index < source.length) {
-                char next = source[index];
-                if (next == '\n') {
-                    line++;
-                    column = 1;
-                } else {
-                    column++;
-                }
+            if (index >= source.length) {
+                break;
             }
-
-            index++;
         }
 
-        return tokens;
+        return tokens_list;
     }
 
-    string getStringLiteral(string source, int index) {
+    Token getStringLiteral(string source, int index) {
         int start = index;
         index++;
-        while (index < source.length) {
-            char c = source[index];
-            if (c == '"') {
-                return source[start..index+1];
-            }
+        while (index < source.length && source[index] != '"') {
             index++;
         }
-        throw new Exception("Unterminated string literal");
+        if (index >= source.length) {
+            throw new Exception("Unterminated string literal");
+        }
+        index++;
+        return Token(source[start..index], TokenType.StringLiteral, this.line, this.column);
     }
 
-    string getWhiteSpace(string source, int index) {
+    Token getWhiteSpace(string source, int index) {
         int start = index;
         index++;
-        while (index < source.length) {
-            char c = source[index];
-            if (c != ' ' && c != '\t') {
-                return source[start..index];
-            }
+        while (index < source.length && (source[index] == ' ' || source[index] == '\t')) {
             index++;
         }
-        throw new Exception("Unterminated whitespace");
+        return Token(source[start..index], TokenType.WhiteSpace, this.line, this.column);
     }
 
-    string getNewLine(string source, int index) {
+    Token getNewLine(string source, int index) {
         int start = index;
         index++;
-        while (index < source.length) {
-            char c = source[index];
-            if (c != '\n') {
-                return source[start..index];
-            }
+        while (index < source.length && source[index] == '\n') {
             index++;
         }
-        throw new Exception("Unterminated newline");
+        return Token(source[start..index], TokenType.NewLine, this.line, this.column);
     }
 
-    string getTab(string source, int index) {
+    Token getVariable(string source, int index) {
         int start = index;
         index++;
-        while (index < source.length) {
-            char c = source[index];
-            if (c != '\t') {
-                return source[start..index];
-            }
+        while (index < source.length && source[index].isAlpha) {
             index++;
         }
-        throw new Exception("Unterminated tab");
+        return Token(source[start..index], TokenType.Variable, this.line, this.column);
     }
 
-    string getNumberLiteral(string source, int index) {
+    Token getNumberLiteral(string source, int index) {
         int start = index;
         index++;
-        bool hasDecimal = false;
-        while (index < source.length) {
-            char c = source[index];
-            if (!isDigit(c)) {
-                if (c == '.' && !hasDecimal) {
-                    hasDecimal = true;
-                } else {
-                    return source[start..index];
-                }
-            }
+        while (index < source.length && source[index].isDigit) {
             index++;
         }
-        throw new Exception("Unterminated number literal");
+        return Token(source[start..index], TokenType.NumberLiteral, this.line, this.column);
     }
 
-    string getIdentifier(string source, int index) {
+    Token getIdentifier(string source, int index) {
         int start = index;
         index++;
-        while (index < source.length) {
-            char c = source[index];
-            if (!isLetter(c)) {
-                return source[start..index];
-            }
+        while (index < source.length && isAlpha(source[index])) {
             index++;
         }
-        throw new Exception("Unterminated identifier");
+        return Token(source[start..index], TokenType.Identifier, this.line, this.column);
     }
 
-    bool isDigit(char c) {
-        return c >= '0' && c <= '9';
+    void advance() {
+        this.column++;
     }
 
-    bool isLetter(char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    void advance(int n) {
+        this.column += n;
     }
 
-    bool isWhiteSpace(char c) {
-        return c == ' ' || c == '\t';
+    void newLine() {
+        this.line++;
+        this.column = 1;
+    }
+
+    void newLine(int n) {
+        this.line += n;
+        this.column = 1;
+    }
+
+    void skipWhiteSpace(string source, int index) {
+        while (index < source.length && (source[index] == ' ' || source[index] == '\t')) {
+            index++;
+        }
     }
 }
 

@@ -1,0 +1,11 @@
+scene inside
+add emir
+emir "Helloooo!"
+"This is inside voice."
+remove emir
+
+scene outside
+add emir
+emir "Hello again."
+
+$value = 123

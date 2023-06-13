@@ -7,3 +7,5 @@ remove emir
 scene outside
 add emir
 emir "Hello again."
+
+$value = 123
