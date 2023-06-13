@@ -5,3 +5,4 @@ description = "An example game made to show capabilities of Bazinga."
 version = "1.0.0"
 
 [options]
+resizable = true
