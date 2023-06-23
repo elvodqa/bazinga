@@ -93,7 +93,6 @@ struct Token {
     int column;
 }
 
-
 class CommandParser {
     Command[] commands;
     Token[] tokens;
@@ -174,15 +173,9 @@ class CommandParser {
             }
         }
 
-        
 
         return commands;
     }
-
-    
-
-
-
 
     Token[] getTokens(string source) {
         Token[] tokens_list;

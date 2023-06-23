@@ -10,11 +10,12 @@ import bazinga.game;
 import std.path;
 import std.file;
 
+const string VERSION = "0.0.1";
+
 string window_title;
 string game_location;
 Game game;
 Font ui_font;
-
 
 int main(string[] args)
 {
@@ -123,6 +124,8 @@ void run_game() {
                     // Draw Play, Load, Options, Quit buttons at the bottom left of the screen. Use window size to calculate.
                     if (GuiButton(Rectangle(50, GetScreenHeight() - 150, 200, 40), "Quit")) {
                         CloseWindow();
+                        static import core.stdc.stdlib;
+                        core.stdc.stdlib.exit(0);
                     }
                     if (GuiButton(Rectangle(50, GetScreenHeight() - 200, 200, 40), "Settings")) {
                         is_settings_open = !is_settings_open;
